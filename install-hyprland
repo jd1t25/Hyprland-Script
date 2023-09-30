@@ -458,14 +458,19 @@ set -e # Exit immediately if a command exits with a non-zero status.
 #
 #    done
 
-    printf " Copying config files...\n"
-    cd dotfiles
-    #stow -v .
-    stow --adopt -vt ~/.config .config
-    cp -rf .zsh* $HOME
-    cp -rf bin $HOME
-    cat backup/yay.bak | xargs yay -S --needed --noconfirm 2> yay.log
-    cd ..
+# Personal Files
+printf " Copying config files...\n"
+cd dotfiles
+#stow -v .
+stow --adopt -vt ~/.config .config
+cp -rf .zsh* $HOME
+cp -rf bin $HOME
+sudo cp backup/bak/blacklist.conf.bak /etc/modprobe.d/blacklist.conf
+cat backup/yay.bak | xargs yay -S --needed --noconfirm 2> yay.log
+cd ..
+
+# When Laptop Lid Closed PC doesn't shut down
+sudo sed -ie "s/#HandleLidSwitch=suspend/HandleLidSwitch=ignore/" /etc/systemd/logind.conf
 
 # Change Shell to Zsh    
 chsh -s $(which zsh)
