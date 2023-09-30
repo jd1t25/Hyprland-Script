@@ -301,7 +301,7 @@ clear
 # installation of other components needed
 printf "\n%s - Installing other necessary packages.... \n" "${NOTE}"
 
-for PKG1 in foot swaybg swayidle swaylock-effects wofi wlogout mako grim slurp wl-clipboard cliphist swappy polkit-kde-agent nwg-look-bin swww mousepad pipewire-alsa playerctl; do
+for PKG1 in stow mako grim slurp wl-clipboard cliphist swappy polkit-kde-agent nwg-look-bin mousepad pipewire-alsa playerctl; do
     install_package "$PKG1" 2>&1 | tee -a "$LOG"
     if [ $? -ne 0 ]; then
         echo -e "\e[1A\e[K${ERROR} - $PKG1 install had failed, please check the install.log"
@@ -325,233 +325,9 @@ for FONT in otf-font-awesome ttf-jetbrains-mono-nerd ttf-jetbrains-mono otf-font
     fi
 done
 
-for BAR in waybar; do
-    install_package  "$BAR" 2>&1 | tee -a "$LOG"
-        if [ $? -ne 0 ]; then
-        echo -e "\e[1A\e[K${ERROR} - $BAR install had failed, please check the install.log"
-        exit 1
-    fi
-done
-
 echo
 print_success "All necessary packages installed successfully."
 sleep 2
-
-#clear screen
-clear
-
-#themes and cursors
-printf "\n${NOTE} GTK THEMES ARE NEEDED FOR DARK-LIGHT TRANSITION! \n" 
-read -n1 -rep "${CAT} OPTIONAL - Would you like to install GTK Themes and Cursors? (y/n)" theme
-if [[ $theme =~ ^[Yy]$ ]]; then
-	while true; do
-    		read -rp "${CAT} Which GTK Theme and Cursors to install? Catppuccin or Mojave (Apple like)? Enter 'c' or 'm': " choice
-    		case "$choice" in
-        		c|C)
-            		printf "${NOTE} Installing Catpuccin Theme packages...\n"
-            		for THEME1 in catppuccin-gtk-theme-mocha catppuccin-gtk-theme-latte catppuccin-cursors-mocha; do
-                		install_package "$THEME1" 2>&1 | tee -a "$LOG"
-                		if [ $? -ne 0 ]; then
-                    		echo -e "\e[1A\e[K${ERROR} - $THEME1 install had failed, please check the install.log"
-                    		exit 1
-                		fi
-            		done
-            		# Shiny-Dark-Icons-themes
-            		mkdir -p ~/.icons
-			        cd assets
-            		tar -xf Shiny-Dark-Icons.tar.gz -C ~/.icons
-			        tar -xf Shiny-Light-Icons.tar.gz -C ~/.icons
-			        cd ..
-			        sed -i '9,12s/#//' config/hypr/scripts/DarkLight.sh
-			        sed -i '9,12s/#//' config/hypr/scripts/DarkLight-swaybg.sh
-            		sed -i '39s/#//' config/hypr/hyprland.conf
-            		cp -f 'config/hypr/waybar/style/dark-styles/style-dark-cat.css' 'config/hypr/waybar/style/style-dark.css'
-            		break
-            		;;
-        		m|M)
-            		printf "${NOTE} Installing Mojave Theme packages...\n"
-            		for THEME2 in mojave-gtk-theme mcmojave-cursors mcmojave-circle-icon-theme ; do
-                		install_package "$THEME2" 2>&1 | tee -a "$LOG"
-                		if [ $? -ne 0 ]; then
-                    		echo -e "\e[1A\e[K${ERROR} - $THEME2 install had failed, please check the install.log"
-                    		exit 1
-                		fi
-            		done
-			        sed -i '15,18s/#//' config/hypr/scripts/DarkLight.sh
-			        sed -i '15,18s/#//' config/hypr/scripts/DarkLight-swaybg.sh
-            		sed -i '40s/#//' config/hypr/hyprland.conf
-            		cp -f 'config/hypr/waybar/style/dark-styles/style-dark-mojave.css' 'config/hypr/waybar/style/style-dark.css'
-            		break
-         		;;
-        		*)
-            		printf "%s - Invalid choice. Please enter 'c' or 'm'\n" "${ERROR}"
-            		continue
-            		;;
-    		esac
-	done
-else
-  printf "${NOTE} No themes will be installed..\n"
-fi
-
-
-#clear screen
-clear
-
-# additional packages (File Manager)
-read -n1 -rep "${CAT} OPTIONAL - Would you like to install Thunar as file manager? (y/n)" inst3
-echo
-
-if [[ $inst3 =~ ^[Yy]$ ]]; then
-  for THUNAR in thunar thunar-volman tumbler thunar-archive-plugin; do
-    install_package "$THUNAR" 2>&1 | tee -a "$LOG"
-        if [ $? -ne 0 ]; then
-        echo -e "\e[1A\e[K${ERROR} - $THUNAR install had failed, please check the install.log"
-        exit 1
-    fi
-    done
-
-    # check for existing config folders and backup 
-    for DIR1 in Thunar xfce4; do 
-        DIRPATH=~/.config/$DIR1
-        if [ -d "$DIRPATH" ]; then 
-            echo -e "${NOTE}  Config for $DIR1 found, backing up."
-            mv $DIRPATH $DIRPATH-back-up 2>&1 | tee -a "$LOG"
-            echo -e "${NOTE}  Backed up $DIR1 to $DIRPATH-back-up."
-        fi
-    done
-    cp -r config/xfce4 ~/.config/ && { echo "Copy xfce4 completed!"; } || { echo "Error: Failed to copy xfce4 config files."; exit 1; } 2>&1 | tee -a "$LOG"
-    cp -r config/Thunar ~/.config/ && { echo "Copy Thunar completed!"; } || { echo "Error: Failed to copy Thunar config files."; exit 1; } 2>&1 | tee -a "$LOG"
-else
-  printf "${NOTE} Thunar will not be installed.\n"
-fi
-
-#clear screen
-clear
-
-# BLUETOOTH
-read -n1 -rep "${CAT} OPTIONAL - Would you like to install Bluetooth packages? (y/n)" inst4
-if [[ $inst4 =~ ^[Yy]$ ]]; then
-  printf "${NOTE} Installing Bluetooth Packages...\n"
-  for BLUE in bluez bluez-utils blueman; do
-    install_package "$BLUE" 2>&1 | tee -a "$LOG"
-         if [ $? -ne 0 ]; then
-        echo -e "\e[1A\e[K${ERROR} - $BLUE install had failed, please check the install.log"
-        exit 1
-        fi
-    done
-
-  printf " Activating Bluetooth Services...\n"
-  sudo systemctl enable --now bluetooth.service 2>&1 | tee -a "$LOG"
-else
-  printf "${NOTE} No bluetooth packages installed..\n"
-fi
-
-#clear screen
-clear
-
-# SDDM install
-read -n1 -rep "${CAT} OPTIONAL - Would you like to install SDDM as the login manager? (y/n)" install_sddm
-echo
-
-if [[ $install_sddm =~ ^[Yy]$ ]]; then
-  # Check if SDDM is already installed
-  if pacman -Qs sddm > /dev/null; then
-    # Prompt user to manually install sddm-git to remove SDDM
-    read -n1 -rep "SDDM is already installed. Would you like to manually install sddm-git to remove it? This requires manual intervention. (y/n)" manual_install_sddm
-    echo
-    if [[ $manual_install_sddm =~ ^[Yy]$ ]]; then
-      $ISAUR -S sddm-git 2>&1 | tee -a "$LOG"
-    fi
-  fi
-
-  # Install SDDM and Catppuccin theme
-  printf "${NOTE} Installing SDDM-git........\n"
-  for package in sddm-git; do
-    install_package "$package" 2>&1 | tee -a "$LOG"
-    if [ $? -ne 0 ]; then
-      echo -e "\e[1A\e[K${ERROR} - $package install has failed, please check the install.log"
-      exit 1
-    fi
-   done 
-
-    # Check if other login managers installed and disabling its service before enabling sddm
-    if pacman -Qs lightdm > /dev/null ; then
-    echo "disabling lightdm..."
-    sudo systemctl disable lightdm.service 2>&1 | tee -a "$LOG"
-    fi
-
-    if pacman -Qs gdm > /dev/null ; then
-    echo "disabling gdm..."
-    sudo systemctl disable gdm.service 2>&1 | tee -a "$LOG"
-    fi
-    
-    if pacman -Qs lxdm > /dev/null ; then
-    echo "disabling lxdm..."
-    sudo systemctl disable lxdm.service  2>&1 | tee -a "$LOG"
-    fi
-
-    if pacman -Qs lxdm-gtk3 > /dev/null ; then
-    echo "disabling lxdm..."
-    sudo systemctl disable lxdm.service  2>&1 | tee -a "$LOG"
-    fi
-
-    printf " Activating sddm service........\n"
-    sudo systemctl enable sddm
-
-    # Set up SDDM
-    echo -e "${NOTE} Setting up the login screen."
-    sddm_conf_dir=/etc/sddm.conf.d
-    if [ ! -d "$sddm_conf_dir" ]; then
-        printf "$CAT - $sddm_conf_dir not found, creating...\n"
-        sudo mkdir "$sddm_conf_dir" 2>&1 | tee -a "$LOG"
-    fi
-
-    wayland_sessions_dir=/usr/share/wayland-sessions
-    if [ ! -d "$wayland_sessions_dir" ]; then
-        printf "$CAT - $wayland_sessions_dir not found, creating...\n"
-        sudo mkdir "$wayland_sessions_dir" 2>&1 | tee -a "$LOG"
-    fi
-    sudo cp assets/hyprland.desktop "$wayland_sessions_dir/" 2>&1 | tee -a "$LOG"
-    
-    # SDDM-CATPPUCIN theme
-    read -n1 -rep "${CAT} OPTIONAL - Would you like to install SDDM-CATPPUCCIN theme? (y/n)" install_sddm_catppuccin
-    echo
-
-    if [[ $install_sddm_catppuccin =~ ^[Yy]$ ]]; then
-          for sddm_theme in sddm-catppuccin-git; do
-       install_package "$sddm_theme" 2>&1 | tee -a "$LOG"
-          if [ $? -ne 0 ]; then
-          echo -e "\e[1A\e[K${ERROR} - $sddm_theme install has failed, please check the install.log"
-          exit 1
-    	  fi
-          done
-    fi	
-    echo -e "[Theme]\nCurrent=catppuccin" | sudo tee -a "$sddm_conf_dir/10-theme.conf" 2>&1 | tee -a "$LOG"
-else
-  printf "${NOTE} SDDM will not be installed.\n"
-fi
- 
-#clear screen
-clear
-
-
-### Install software for Asus ROG laptops ###
-read -n1 -rep "${CAT} (OPTIONAL - ONLY for ROG Laptops) Would you like to install Asus ROG software support? (y/n)" ROG
-if [[ $ROG =~ ^[Yy]$ ]]; then
-    printf " Installing ASUS ROG packages...\n"
-    for ASUS in asusctl supergfxctl rog-control-center; do
-        install_package  "$ASUS" 2>&1 | tee -a "$LOG"
-        if [ $? -ne 0 ]; then
-        echo -e "\e[1A\e[K${ERROR} - $ASUS install had failed, please check the install.log"
-        exit 1
-        fi
-    done
-    printf " Activating ROG services...\n"
-    sudo systemctl enable --now supergfxd 2>&1 | tee -a "$LOG"
-    sed -i '23s/#//' config/hypr/configs/Execs.conf
-else
-    printf "${NOTE} Asus ROG software support not installed..\n"
-fi
 
 #clear screen
 clear
@@ -656,52 +432,56 @@ printf "\n"
 ### Copy Config Files ###
 set -e # Exit immediately if a command exits with a non-zero status.
 
-read -n1 -rep "${CAT} Would you like to copy config and wallpaper files? (y,n)" CFG
-if [[ $CFG =~ ^[Yy]$ ]]; then
-
-# check for existing config folders and backup 
-    for DIR in cava foot hypr mako swappy swaylock waybar wlogout wofi 
-    do 
-        DIRPATH=~/.config/$DIR
-        if [ -d "$DIRPATH" ]; then 
-            echo -e "${NOTE} - Config for $DIR found, attempting to back up."
-            mv $DIRPATH $DIRPATH-back-up 2>&1 | tee -a "$LOG"
-            echo -e "${NOTE} - Backed up $DIR to $DIRPATH-back-up."
-        fi
-
-    done
-
-    for DIRw in wallpapers
-    do 
-        DIRPATH=~/Pictures/$DIRw
-        if [ -d "$DIRPATH" ]; then 
-            echo -e "${NOTE} - wallpapers in $DIRw found, attempting to back up."
-            mv $DIRPATH $DIRPATH-back-up 2>&1 | tee -a "$LOG"
-            echo -e "${NOTE} - Backed up $DIRw to $DIRPATH-back-up."
-        fi
-
-    done
+#read -n1 -rep "${CAT} Would you like to copy config and wallpaper files? (y,n)" CFG
+#if [[ $CFG =~ ^[Yy]$ ]]; then
+#
+## check for existing config folders and backup 
+#    for DIR in cava foot hypr mako swappy swaylock waybar wlogout wofi 
+#    do 
+#        DIRPATH=~/.config/$DIR
+#        if [ -d "$DIRPATH" ]; then 
+#            echo -e "${NOTE} - Config for $DIR found, attempting to back up."
+#            mv $DIRPATH $DIRPATH-back-up 2>&1 | tee -a "$LOG"
+#            echo -e "${NOTE} - Backed up $DIR to $DIRPATH-back-up."
+#        fi
+#
+#    done
+#
+#    for DIRw in wallpapers
+#    do 
+#        DIRPATH=~/Pictures/$DIRw
+#        if [ -d "$DIRPATH" ]; then 
+#            echo -e "${NOTE} - wallpapers in $DIRw found, attempting to back up."
+#            mv $DIRPATH $DIRPATH-back-up 2>&1 | tee -a "$LOG"
+#            echo -e "${NOTE} - Backed up $DIRw to $DIRPATH-back-up."
+#        fi
+#
+#    done
 
     printf " Copying config files...\n"
-    mkdir -p ~/.config
-    cp -r config/hypr ~/.config/ || { echo "Error: Failed to copy hypr config files."; exit 1; } 2>&1 | tee -a "$LOG"
-    cp -r config/foot ~/.config/ || { echo "Error: Failed to copy foot config files."; exit 1; } 2>&1 | tee -a "$LOG"
-    cp -r config/wlogout ~/.config/ || { echo "Error: Failed to copy wlogout config files."; exit 1; } 2>&1 | tee -a "$LOG"
-    cp -r config/btop ~/.config/ || { echo "Error: Failed to copy btop config files."; exit 1; } 2>&1 | tee -a "$LOG"
-    cp -r config/cava ~/.config/ || { echo "Error: Failed to copy cava config files."; exit 1; } 2>&1 | tee -a "$LOG"
-    cp -r config/swappy ~/.config/ || { echo "Error: Failed to copy swappy config files."; exit 1; } 2>&1 | tee -a "$LOG"
-    mkdir -p ~/Pictures/wallpapers
-    cp -r wallpapers ~/Pictures/ && { echo "Copy completed!"; } || { echo "Error: Failed to copy wallpapers."; exit 1; } 2>&1 | tee -a "$LOG"
-
-    # symlinks for waybar
-    ln -sf "$HOME/.config/hypr/waybar/configs/config-default" "$HOME/.config/hypr/waybar/config" && \
-    ln -sf "$HOME/.config/hypr/waybar/style/dark-styles/style-dark-cat.css" "$HOME/.config/hypr/waybar/style.css" && \
-
-    # Set some files as executable 
-    chmod +x ~/.config/hypr/scripts/* 2>&1 | tee -a "$LOG"
-else
-   print_error " No Config files and wallpaper files copied"
-fi
+    cd dotfiles
+    stow -v .
+    stow --adopt -vt ~/.config .config
+    cd ..
+#    mkdir -p ~/.config
+#    cp -r config/hypr ~/.config/ || { echo "Error: Failed to copy hypr config files."; exit 1; } 2>&1 | tee -a "$LOG"
+#    cp -r config/foot ~/.config/ || { echo "Error: Failed to copy foot config files."; exit 1; } 2>&1 | tee -a "$LOG"
+#    cp -r config/wlogout ~/.config/ || { echo "Error: Failed to copy wlogout config files."; exit 1; } 2>&1 | tee -a "$LOG"
+#    cp -r config/btop ~/.config/ || { echo "Error: Failed to copy btop config files."; exit 1; } 2>&1 | tee -a "$LOG"
+#    cp -r config/cava ~/.config/ || { echo "Error: Failed to copy cava config files."; exit 1; } 2>&1 | tee -a "$LOG"
+#    cp -r config/swappy ~/.config/ || { echo "Error: Failed to copy swappy config files."; exit 1; } 2>&1 | tee -a "$LOG"
+#    mkdir -p ~/Pictures/wallpapers
+#    cp -r wallpapers ~/Pictures/ && { echo "Copy completed!"; } || { echo "Error: Failed to copy wallpapers."; exit 1; } 2>&1 | tee -a "$LOG"
+#
+#    # symlinks for waybar
+#    ln -sf "$HOME/.config/hypr/waybar/configs/config-default" "$HOME/.config/hypr/waybar/config" && \
+#    ln -sf "$HOME/.config/hypr/waybar/style/dark-styles/style-dark-cat.css" "$HOME/.config/hypr/waybar/style.css" && \
+#
+#    # Set some files as executable 
+#    chmod +x ~/.config/hypr/scripts/* 2>&1 | tee -a "$LOG"
+#else
+#   print_error " No Config files and wallpaper files copied"
+#fi
 
 #clear screen
 clear
